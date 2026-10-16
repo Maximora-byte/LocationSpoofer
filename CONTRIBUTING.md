@@ -35,8 +35,8 @@
 ### 反馈缺陷 (Bug)
 
 在提交 Issue 前，请确认：
-* 检索 [已有的 Issues](https://github.com/your-username/LocationSpoofer/issues) 确保问题未被重复汇报。
-* 确保运行在支持的基础环境中（**Android 8.0+**、**KernelSU / APatch / Magisk**、**LSPosed API 101+**）。
+* 检索 [已有的 Issues](https://github.com/Maximora-byte/LocationSpoofer/issues) 确保问题未被重复汇报。
+* 确保运行在支持的基础环境中（**Android 8.0+**、**KernelSU / APatch / Magisk**、**支持本仓远程配置与热重载能力的 libxposed 框架**）。
 
 通过 **缺陷报告模板** 提交问题时，请尽可能提供详细信息：
 * **设备与环境**：Android 系统版本、机型 / ROM（如 HyperOS、LineageOS）、Root 方案（KernelSU/APatch/Magisk 及版本）、LSPosed 框架版本。
@@ -60,7 +60,7 @@
 2. **编写代码**，严格遵循 Kotlin / Jetpack Compose / MVVM 编码风格与架构规范。
 3. **本地编译验证**：
    ```bash
-   ./gradlew assembleDebug
+   ./gradlew :app:assembleScopedDebug :app:assembleGlobalDebug
    ```
 4. **提交代码**，遵循标准 Commit 格式（详见 [Git 提交规范](#git-提交信息规范-commit-conventions)）。
 5. **推送到你的 Fork 仓库**，并在 GitHub 发起面向 `main` 分支的 Pull Request。
@@ -71,24 +71,27 @@
 ## 本地开发与编译
 
 ### 前置环境
-* **Android Studio**：Android Studio Hedgehog / Iguana / Jellyfish 或更新版本。
-* **JDK**：OpenJDK 17 或 OpenJDK 21。
+* **Android Studio**：选择与仓库当前 Android Gradle Plugin 兼容的版本；依赖声明见 [libs.versions.toml](gradle/libs.versions.toml)，当前 AGP 为 `9.3.1`。
+* **JDK**：Gradle daemon 使用 JDK 21（[配置](gradle/gradle-daemon-jvm.properties)）；源码 Java / Kotlin 字节码目标仍为 17，两者不要混淆。使用仓库固定的 Gradle Wrapper（当前 `9.6.1`）。
 * **Android SDK**：compileSdk `37`（minSdk `26`），Build Tools 版本由 AGP 自动匹配，无需手动指定。
-* **测试设备**：一台已 Root 并安装 **KernelSU / APatch / Magisk** 及 **LSPosed (API 101+)** 的实体测试机。
+* **测试设备**：一台已 Root 并安装 **KernelSU / APatch / Magisk** 及 **支持本仓远程配置与热重载能力的 libxposed 框架** 的实体测试机。
 
 ### 编译构建
+
+`scoped` 与 `global` 是当前两个产品变体；下方构建命令生成两种 debug 产物，安装时只选择所需变体。框架最低元数据声明与实际已验证设备范围见 [README](README.md#环境要求)。
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/LocationSpoofer.git
+git clone https://github.com/Maximora-byte/LocationSpoofer.git
 
 # 进入目录
 cd LocationSpoofer
 
 # 编译 Debug APK
-./gradlew assembleDebug
+./gradlew :app:assembleScopedDebug :app:assembleGlobalDebug
 
 # 直接安装到已连接的设备
-./gradlew installDebug
+./gradlew :app:installScopedDebug
+# 如需全局版，改用 :app:installGlobalDebug；选择一种变体安装。
 ```
 
 ---
@@ -114,7 +117,7 @@ LocationSpoofer 基于 **MVVM + Clean Architecture** 构建，代码按职责拆
 * **本地存储**：Room Database（SQLite，位于 `core-data`），涉及空间查询的部分需配备空间索引优化。
 * **Xposed Hook 核心层**：
   * 位于 `xposed` 模块的 `com.vincenthzr.locationspoofer.xposed` 包，入口类 `LocationHooker`；具体 Hook 实现按类型拆分在 `hooks/`（定位/GNSS/地图 SDK/计步/反检测）与 `hooks/network/`（Wi-Fi/基站/蓝牙/连接状态）两个子包，新增 Hook 时优先归类到已有子包，而不是堆到 `xposed` 根包或 `LocationHooker.kt` 里。
-  * 严格遵循 **LSPosed API 101+ / libxposed (Service 模式)** 规范。
+  * 严格遵循 **当前声明的 libxposed API / Service 102.0.0** 规范。
   * Hook 调用只读 `LocationHooker` 的内存配置缓存；框架通知、远程文件读取和 JSON 解码必须在配置接收线程处理，路线派发与系统服务重试由独立定时器执行。
   * 两种变体统一使用 libxposed 远程偏好 / 远程文件传递完整配置快照；大配置先完成独立文件写入再发布指针。保留最新期望状态，发布失败与重连时重试。不要恢复公共配置文件、主线程 IPC 或自定义 SELinux 授权。
   * MultiDex 兼容安全性：通过动态 ClassLoader 拦截定位组件，并通过 `/proc/self/cmdline` 锁定宿主进程主包名，避免插件或内嵌 Webview 破坏全局上下文。

@@ -35,8 +35,8 @@ This project and everyone participating in it is governed by the [LocationSpoofe
 ### Reporting Bugs
 
 Before creating a bug report, please:
-* Check the [existing Issues](https://github.com/your-username/LocationSpoofer/issues) to ensure the problem hasn't already been reported.
-* Ensure you are running a supported environment (**Android 8.0+**, **KernelSU / APatch / Magisk**, **LSPosed API 101+**).
+* Check the [existing Issues](https://github.com/Maximora-byte/LocationSpoofer/issues) to ensure the problem hasn't already been reported.
+* Ensure you are running a supported environment (**Android 8.0+**, **KernelSU / APatch / Magisk**, **a libxposed framework supporting this revision’s remote configuration and hot reload**).
 
 When filing a bug report via the **Bug Report Template**, please provide:
 * **Device & Environment**: Android OS version, ROM/device model, Root solution (KernelSU/APatch/Magisk version), LSPosed/libxposed version.
@@ -60,7 +60,7 @@ Feature requests are welcome! When opening an issue via the **Feature Request Te
 2. **Make your changes** following our code style and architecture.
 3. **Verify the build**:
    ```bash
-   ./gradlew assembleDebug
+   ./gradlew :app:assembleScopedDebug :app:assembleGlobalDebug
    ```
 4. **Commit your changes** using clear commit messages (see [Commit Message Conventions](#commit-message-conventions)).
 5. **Push to your fork** and submit a Pull Request targeting the `main` branch.
@@ -71,24 +71,27 @@ Feature requests are welcome! When opening an issue via the **Feature Request Te
 ## Development Setup
 
 ### Prerequisites
-* **Android Studio**: Android Studio Hedgehog / Iguana / Jellyfish or newer.
-* **JDK**: OpenJDK 17 or OpenJDK 21.
+* **Android Studio**: Choose a version compatible with the repository Android Gradle Plugin; [libs.versions.toml](gradle/libs.versions.toml) currently pins AGP `9.3.1`.
+* **JDK**: The [Gradle daemon configuration](gradle/gradle-daemon-jvm.properties) selects JDK 21. Java / Kotlin bytecode targets remain 17; this is separate from the daemon runtime. Use the repository Gradle Wrapper (currently `9.6.1`).
 * **Android SDK**: compileSdk `37` (minSdk `26`); Build Tools version is resolved automatically by AGP, no need to pin it manually.
-* **Testing Device**: A rooted device with **KernelSU / APatch / Magisk** and **LSPosed (API 101+)** installed.
+* **Testing Device**: A rooted device with **KernelSU / APatch / Magisk** and **a libxposed framework supporting this revision’s remote configuration and hot reload** installed.
 
 ### Building
+
+The current product variants are `scoped` and `global`. The build below produces both debug variants; install only the one you intend to use. See [Requirements](README_EN.md#requirements) for module metadata and the limits of device verification.
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/LocationSpoofer.git
+git clone https://github.com/Maximora-byte/LocationSpoofer.git
 
 # Open directory
 cd LocationSpoofer
 
 # Build debug APK
-./gradlew assembleDebug
+./gradlew :app:assembleScopedDebug :app:assembleGlobalDebug
 
 # Install directly to connected device
-./gradlew installDebug
+./gradlew :app:installScopedDebug
+# For the global variant, use :app:installGlobalDebug instead.
 ```
 
 ---
@@ -114,7 +117,7 @@ Before adding new code, decide which module it belongs in: pure business logic/p
 * **Database**: Room Database (in `core-data`) with spatial index optimizations.
 * **Xposed Hook Layer**:
   * Lives in the `xposed` module's `com.vincenthzr.locationspoofer.xposed` package, entry class `LocationHooker`; concrete hooks are split by category across `hooks/` (location/GNSS/map SDKs/steps/anti-detection) and `hooks/network/` (Wi-Fi/cell/Bluetooth/connectivity) — file new hooks into the matching existing subpackage rather than piling them into the `xposed` root package or `LocationHooker.kt`.
-  * Adheres to **LSPosed API 101+ / libxposed (Service mode)** specifications.
+  * Adheres to **the declared libxposed API / Service 102.0.0** specifications.
   * Hook calls only read the memory configuration cache. Framework notifications, remote file reads, and JSON decoding belong in the configuration receiver; motion delivery and service discovery use a separate timer.
   * Both variants use libxposed remote preferences/files for complete snapshots. Finish immutable large-payload files before publishing their pointers. Retain the latest desired state for retries and reconnection. Do not reintroduce public config files, IPC in hook calls, or custom SELinux grants.
   * MultiDex safety: Dynamic ClassLoader hooking locked to the host package via `/proc/self/cmdline`.

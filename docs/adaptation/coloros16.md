@@ -6,7 +6,7 @@
 ## 接入方式
 
 - `core-geo` 的 `RomRules.isColorOs16` 统一判断 ColorOS 系列、ROM 主版本 16、Android API 36。测试设备 `ro.build.version.oplusrom` 为 `V16.0.0`，不限制机型或固件哈希。
-- `ColorOs16Vendor` 继承 `SystemVersionVendor`，通过 `classCandidates` 补充蓝牙 `TransitionalScanHelper` 和模块化 `ConnectivityService` 的类名。通用 Hook 继续通过 `SystemClassLocator` 挂载，并自动记录 Hook 运行状态。
+- `ColorOs16Vendor` 继承 `SystemVersionVendor`，通过 `classCandidates` 按顺序提供蓝牙 `ScanController`、`TransitionalScanHelper` 两个候选，并补充模块化 `ConnectivityService` 的类名。当前分支已合入对缺少 `TransitionalScanHelper` 的固件的候选补充，详见 [ColorOs16Vendor.kt](../../xposed/src/main/java/com/vincenthzr/locationspoofer/xposed/hooks/vendor/profiles/versions/ColorOs16Vendor.kt)；代码覆盖不等于新增真机验证记录。通用 Hook 继续通过 `SystemClassLocator` 挂载，并自动记录 Hook 运行状态。
 - 版本差异通过 `installExtraHooks` 追加，统一用 `XposedHelpers.hookAllMethods` 挂载并记录结果。Hook 句柄和定时器登记在 `LocationHooker.vendorExtraHooks`，热重载前统一关闭；适配器单例不保存运行时状态。
 - 手动选择 ColorOS 厂商时，仍会选中与设备版本匹配的 ColorOS 16 适配器；手动选择 AOSP 时不启用这些扩展。
 - 蓝牙接口中的 `AttributionSource` 纳入通用的调用方 UID、包名提取逻辑。

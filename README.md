@@ -10,7 +10,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-purple.svg)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![KernelSU](https://img.shields.io/badge/Root-KernelSU-orange.svg)](https://kernelsu.org)
-[![LSPosed](https://img.shields.io/badge/LSPosed-API%20101%2B-purple.svg)](https://github.com/LSPosed/LSPosed)
+[![LSPosed](https://img.shields.io/badge/LSPosed-API%20102-purple.svg)](https://github.com/LSPosed/LSPosed)
 [![Telegram](https://img.shields.io/badge/Telegram-交流群-blue.svg)](https://t.me/+CsxZGItXdW40ZWVl)
 
 [简体中文](README.md) | [English](README_EN.md)
@@ -37,7 +37,7 @@
 *   对连续定位坐标序列进行傅里叶变换（FFT）或离散度分析，识别非自然的静态固定点或机械式等速直线轨迹。
 
 **LocationSpoofer** 是专为应对深度风控检测而设计的**系统级虚拟定位与无线环境模拟方案**。
-项目基于 **KernelSU / APatch / Magisk** 获取底层 Root 权限，并利用 **LSPosed (libxposed API 101+)** 框架在 Zygote 阶段注入目标应用进程，以高物理契合度拦截并伪造所有与位置、卫星、基站、Wi-Fi、蓝牙、传感器相关的底层 API 响应，确保应用获取自洽且真实的虚假环境指纹。
+项目基于 **KernelSU / APatch / Magisk** 获取底层 Root 权限，并利用 **LSPosed / libxposed（构建依赖 API 102）** 框架在 Zygote 阶段注入目标应用进程，以高物理契合度拦截并伪造所有与位置、卫星、基站、Wi-Fi、蓝牙、传感器相关的底层 API 响应，确保应用获取自洽且真实的虚假环境指纹。
 
 ---
 
@@ -171,7 +171,7 @@
                │ 框架管理的远程偏好 / 配置文件 │
                └──────────────────────┬──────────────────────┘
                                       │ (框架通知 → 后台解码 → 原子更新内存缓存)
-                                      ▼ LSPosed / libxposed (API 101+) 注入
+                                      ▼ LSPosed / libxposed (API 102 target) 注入
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              目标 App 进程                              │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
@@ -205,7 +205,7 @@
 
 * **系统版本**：Android 8.0 (API 26) 及以上
 * **Root 方案**：已获取 Root 权限（推荐 [**KernelSU**](https://kernelsu.org) / **APatch** / **Magisk**）。
-* **Xposed 框架**：已安装并激活 **LSPosed (API 101+)** 或兼容 libxposed API 101+ 的框架环境。
+* **Xposed 框架**：需要支持当前 libxposed 远程配置与热重载能力的框架。构建依赖 API / Service `102.0.0`；[模块元数据](xposed/src/main/resources/META-INF/xposed/module.prop) 声明 `minApiVersion=100`、`targetApiVersion=102`，但最低元数据值不等于旧框架已经通过当前功能验收。具体设备与版本验证见 [适配进度](ADAPTATION_PROGRESS.md)。
 
 ---
 
@@ -213,12 +213,16 @@
 
 ### 1. 编译与安装
 
+本仓是 [HuangZhuoRui/LocationSpoofer](https://github.com/HuangZhuoRui/LocationSpoofer) 的 fork；上游署名和许可证保持原样。本地构建需 JDK 21、Android SDK 37，并使用仓库 Gradle Wrapper；完整配置见 [贡献指南](CONTRIBUTING.md#本地开发与编译)。`scoped` 与 `global` 共用应用 ID，请选择需要的变体。
+
 ```bash
 # 1. 克隆代码仓库
-git clone https://github.com/your-username/LocationSpoofer.git
+git clone https://github.com/Maximora-byte/LocationSpoofer.git
+cd LocationSpoofer
 
 # 2. 编译 Debug APK 并直接安装到设备
-./gradlew installDebug
+./gradlew :app:installScopedDebug
+# 如需全局版，改用 :app:installGlobalDebug；选择一种变体安装。
 ```
 
 ### 2. 权限与激活
@@ -261,9 +265,9 @@ git clone https://github.com/your-username/LocationSpoofer.git
 * **UI 框架**：Jetpack Compose & Material Design 3，叠加第三方 [Miuix](https://github.com/miuix-kmp/miuix)（`top.yukonga.miuix.kmp`）提供的毛玻璃模糊底层能力，并在此之上自研 `ui/liquid` 组件包（改编自开源项目 AndroidLiquidGlass / ILoveWork，Apache-2.0）实现悬浮底栏、透镜折射与阻尼拖拽等 Liquid Glass 交互效果
 * **依赖注入**：Koin，按模块拆分为 `coreDataModule` / `serviceModule` / `viewModelModule` 三个子模块，由 `app` 模块的 `appModules` 统一聚合注册
 * **持久化存储**：Room Database (SQLite) + 空间索引（`core-data` 模块）
-* **网络与序列化**：OkHttp 3 + Kotlinx Serialization
+* **网络与序列化**：OkHttp 4.12.0 + Kotlinx Serialization
 * **地图组件**：AMap 3DMap SDK / BaiduMap SDK / Google Maps & Places SDK
-* **Xposed 框架**：LSPosed API 101+ / libxposed (Service 模式)，Hook 实现位于 `xposed` 模块的 `hooks/` 与 `hooks/network/` 子包
+* **Xposed 框架**：libxposed API / Service 102.0.0，Hook 实现位于 `xposed` 模块的 `hooks/` 与 `hooks/network/` 子包
 
 ---
 
