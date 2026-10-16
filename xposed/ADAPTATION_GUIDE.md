@@ -6,7 +6,7 @@
 
 ## 目录
 
-1. [为什么没有"标准 API"可以照抄](#为什么没有标准-api-可以照抄)
+1. [为什么没有"标准 API"可以照抄](#为什么没有标准-api可以照抄)
 2. [五种定位系统内部 API 的方法](#五种定位系统内部-api-的方法)
 3. [写 Hook 时的防御性套路（本项目的约定）](#写-hook-时的防御性套路本项目的约定)
 4. [OEM 定制 ROM 的特殊坑](#oem-定制-rom-的特殊坑)
@@ -17,7 +17,7 @@
 
 ## 为什么没有"标准 API"可以照抄
 
-本项目 Hook 的对象——`LocationManagerService`、`WifiServiceImpl`、`PhoneInterfaceManager`、`ConnectivityService`、`AppOpsService`、`TelephonyRegistry`……——全部是 **`system_server` 进程内部的实现类**，不是 Android SDK 对外暴露的公共 API。这意味着：
+本项目 Hook 的对象——`LocationManagerService`、`WifiServiceImpl`、`PhoneInterfaceManager`、`ConnectivityService`、`AppOpsService`、`TelephonyRegistry`……——属于**系统服务进程内部实现**，不是 Android SDK 对外暴露的公共 API。大部分位于 `system_server`，`PhoneInterfaceManager` 位于电话进程；蓝牙扫描组件位于蓝牙进程。具体归属见 [SystemComponent.kt](src/main/java/com/vincenthzr/locationspoofer/xposed/hooks/vendor/SystemComponent.kt)。这意味着：
 
 * 它们**没有版本兼容承诺**。Google 每个 Android 大版本都可能重命名、拆分、合并这些类，或者把它们的返回类型从裸的 `List<T>` 换成 `ParceledListSlice<T>`（`getScanResults` 就是活生生的例子，见 [SystemWifiServiceHooker.kt](src/main/java/com/vincenthzr/locationspoofer/xposed/hooks/SystemWifiServiceHooker.kt) 里的返回类型反射判断）。
 * Android 12 起，部分系统服务（Wi-Fi、Connectivity 等）被搬进了 **APEX 模块**（`com.android.wifi`、`com.android.tethering` 等），运行在独立的 ClassLoader 里，`system_server` 的默认 ClassLoader 根本 `Class.forName` 不到它们。
@@ -144,4 +144,4 @@ adb shell dumpsys package android      # 查看 framework 包的版本/签名信
 * [androidxref.com](http://androidxref.com/) — 另一个 AOSP 源码检索站，界面更轻量
 * [jadx](https://github.com/skylot/jadx) — Java/Kotlin 反编译工具，用于分析真机 framework/APEX jar
 * [Frida](https://frida.re/) — 动态插桩框架，适合运行时追踪调用栈
-* [LSPosed / libxposed API 文档](https://github.com/libxposed/api) — 本项目 Hook 层依赖的 API 101+ 规范
+* [LSPosed / libxposed API 文档](https://github.com/libxposed/api) — 本项目当前构建依赖 API 102.0.0，版本声明见 [libs.versions.toml](../gradle/libs.versions.toml)

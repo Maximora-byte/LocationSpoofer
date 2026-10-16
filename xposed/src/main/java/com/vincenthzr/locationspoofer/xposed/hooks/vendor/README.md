@@ -52,7 +52,7 @@
                              └──────────────────┘                           │
           ┌───────────────────┬──────────────┬──────────────┬───────────────┤
           ▼                   ▼              ▼              ▼               ▼
-   HyperOs4Vendor       HyperOsVendor   ColorOsVendor   OneUiVendor   AospVendor(兜底)
+   ColorOs16Vendor      HyperOsVendor   ColorOsVendor   OneUiVendor   AospVendor(兜底)
  (版本级，可选，parent+10)  (100)          (90)           (90)        (Int.MIN_VALUE)
 ```
 

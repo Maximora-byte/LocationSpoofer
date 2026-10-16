@@ -9,7 +9,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-purple.svg)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![KernelSU](https://img.shields.io/badge/Root-KernelSU-orange.svg)](https://kernelsu.org)
-[![LSPosed](https://img.shields.io/badge/LSPosed-API%20101%2B-purple.svg)](https://github.com/LSPosed/LSPosed)
+[![LSPosed](https://img.shields.io/badge/LSPosed-API%20102-purple.svg)](https://github.com/LSPosed/LSPosed)
 [![Telegram](https://img.shields.io/badge/Telegram-Group-blue.svg)](https://t.me/+CsxZGItXdW40ZWVl)
 
 [简体中文](README.md) | [English](README_EN.md)
@@ -36,7 +36,7 @@ In modern Android risk control and anti-cheating environments, standard develope
 *   Time-series coordinate analysis (FFT and variance checks) to detect artificial static coordinates or deterministic linear trajectories.
 
 **LocationSpoofer** is a **system-level virtual positioning and wireless environment simulation framework** engineered specifically to counter deep anti-cheating detections.
-Powered by **KernelSU / APatch / Magisk** for root privileges and **LSPosed (libxposed API 101+)** to hook target processes in the Zygote stage, LocationSpoofer intercepts and fakes all positioning, wireless networking, and motion sensor API responses with physical fidelity. This guarantees that target apps obtain self-consistent, realistic location and radio fingerprints without detecting virtualization.
+Powered by **KernelSU / APatch / Magisk** for root privileges and **LSPosed / libxposed (built against API 102)** to hook target processes in the Zygote stage, LocationSpoofer intercepts and fakes all positioning, wireless networking, and motion sensor API responses with physical fidelity. This guarantees that target apps obtain self-consistent, realistic location and radio fingerprints without detecting virtualization.
 
 ---
 
@@ -166,7 +166,7 @@ Both variants deliver JSON through libxposed remote configuration; hooks read an
               │ Framework-managed remote preferences / files │
               └────────────────────────┬────────────────────────┘
                                       │ (Framework notification -> background decode -> memory snapshot)
-                                      ▼ LSPosed / libxposed (API 101+) Injection
+                                      ▼ LSPosed / libxposed (API 102 target) Injection
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           Target App Process                            │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
@@ -200,7 +200,7 @@ The global scheme hooks system services directly, and their internals differ bet
 
 * **OS Version**: Android 8.0 (API 26) or higher.
 * **Root Manager**: Root access is required (recommended: [**KernelSU**](https://kernelsu.org) / **APatch** / **Magisk**).
-* **Xposed Framework**: Installed and enabled **LSPosed (API 101+)** or compatible libxposed API 101+ environment.
+* **Xposed Framework**: Use a framework implementing the remote configuration and hot-reload capabilities used by this revision. Build dependencies are API / Service `102.0.0`; [module metadata](xposed/src/main/resources/META-INF/xposed/module.prop) declares `minApiVersion=100` and `targetApiVersion=102`. The minimum metadata value does not establish compatibility of older frameworks with current features. See [device verification records](ADAPTATION_PROGRESS.md).
 
 ---
 
@@ -208,12 +208,16 @@ The global scheme hooks system services directly, and their internals differ bet
 
 ### 1. Build & Install
 
+This repository is a fork of [HuangZhuoRui/LocationSpoofer](https://github.com/HuangZhuoRui/LocationSpoofer); upstream attribution and licensing are preserved. Build with JDK 21, Android SDK 37 and the repository Gradle Wrapper; see [Development Setup](CONTRIBUTING_EN.md#development-setup). The `scoped` and `global` variants share an application ID, so choose the variant you need.
+
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/LocationSpoofer.git
+git clone https://github.com/Maximora-byte/LocationSpoofer.git
+cd LocationSpoofer
 
 # 2. Build and install Debug APK
-./gradlew installDebug
+./gradlew :app:installScopedDebug
+# For the global variant, use :app:installGlobalDebug instead.
 ```
 
 ### 2. Activation
@@ -256,9 +260,9 @@ git clone https://github.com/your-username/LocationSpoofer.git
 * **UI**: Jetpack Compose & Material Design 3, layered with the third-party [Miuix](https://github.com/miuix-kmp/miuix) library (`top.yukonga.miuix.kmp`) for its backdrop-blur primitives, on top of which a custom `ui/liquid` package (adapted from the open-source AndroidLiquidGlass / ILoveWork projects, Apache-2.0) implements the Liquid Glass floating bottom bar, lens/vibrancy effects, and damped-drag interactions
 * **Dependency Injection**: Koin, split per module into `coreDataModule` / `serviceModule` / `viewModelModule`, aggregated by `appModules` in the `app` module
 * **Local Storage**: Room Database (SQLite) + Spatial Indexing (in `core-data`)
-* **Networking & Serialization**: OkHttp 3 + Kotlinx Serialization
+* **Networking & Serialization**: OkHttp 4.12.0 + Kotlinx Serialization
 * **Map SDKs**: AMap 3DMap SDK / BaiduMap SDK / Google Maps & Places SDK
-* **Xposed Hooking**: LSPosed API 101+ / libxposed (Service mode); hook implementations live under `xposed`'s `hooks/` and `hooks/network/` packages
+* **Xposed Hooking**: libxposed API / Service 102.0.0; hook implementations live under `xposed`'s `hooks/` and `hooks/network/` packages
 
 ---
 
